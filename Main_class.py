@@ -66,7 +66,8 @@ endimg_rect = endimg_surf_scaled.get_rect(center = (400, 250))
 start_surf = pygame.image.load('Graphics/space_cat.jpg')
 start_surf_scaled = pygame.transform.scale(start_surf, (1020, 700))
 start_cat_rectangle = start_surf_scaled.get_rect(topleft = (0,0))
-start_text = test_font.render("Welcome to catheaven! Press space to continue", False, "White")start_rect = start_text.get_rect(center = (-500, 50))
+start_text = test_font.render("Welcome to catheaven! Press space to continue", False, "White")
+start_rect = start_text.get_rect(center = (-500, 50))
 
 # objects
 snail_surf = pygame.image.load('Graphics/snail.png').convert_alpha()

@@ -2,29 +2,66 @@ import pygame
 from sys import exit
 from random import randint, choice
 
+
+class Munition (pygame.sprite.Sprite):
+    def __init__(self,player_pos_y):
+        super().__init__()
+        self.player_bullet = pygame.image.load('Graphics/bullet.png').convert_alpha()
+        self.image = self.player_bullet
+        self.rect = self.image.get_rect(midright = (130, player_pos_y +50))
+        self.bullet_state = False
+
+    def shoot_bullet(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RIGHT]:
+            self.bullet_state = True
+
+    def bullet_movement(self):
+        if self.bullet_state == True:
+            self.rect.x += 10
+        if self.rect.x >= 820:
+            self.bullet_state = False
+
+    def destroy(self):
+        if self.rect.x >= 820:
+            self.kill()
+            
+    def update(self):
+        self.shoot_bullet()
+        self.bullet_movement()
+        #self.kill()
+
 class Player (pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         player_walk1 = pygame.image.load('Graphics/player_walk_1.png').convert_alpha()
         player_walk2 = pygame.image.load('Graphics/player_walk_2.png').convert_alpha()
+        self.player_jump = pygame.image.load('Graphics/jump.png').convert_alpha()
         self.player_walk = [player_walk1, player_walk2]
         self.player_index = 0
-        self.player_jump = pygame.image.load('Graphics/jump.png').convert_alpha()
-
+    
         self.image = self.player_walk[self.player_index]
         self.rect = self.image.get_rect(topleft = (80,266))
         self.gravity = 0
+        self.double_jump = True
 
     def player_input(self):
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE] and self.rect.y >= 266:
-            self.gravity = -20
-    
+        if keys[pygame.K_SPACE] and self.double_jump == True:
+            self.gravity = -10
+            
     def apply_gravity(self):
-        self.gravity += 1
+        self.gravity += 1 
         self.rect.y += self.gravity
         if self.rect.y >= 266:
             self.rect.y = 266
+            self.double_jump = True
+        if self.rect.y < 50:
+            self.double_jump = False
+
+        # player position for the bullet shooting
+        global player_pos_y
+        player_pos_y = self.rect.y
 
     def animation_state(self):
         if self.rect.y <266:
@@ -75,6 +112,7 @@ class Obstacle (pygame.sprite.Sprite):
         if self.rect.x <= -100:
             self.kill()
 
+
 def display_score():
     current_time = int((pygame.time.get_ticks() - start_time)/10)
     score_surf = test_font.render('Score: ' + f'{current_time}', False, "White")
@@ -82,6 +120,7 @@ def display_score():
     screen.blit(score_surf, score_rect)
     return current_time
 
+# end game if collision with obstacle
 def collision_sprite():
     if pygame.sprite.spritecollide(player.sprite, obstacle_group,True):
         obstacle_group.empty()
@@ -89,6 +128,11 @@ def collision_sprite():
     else:
         return True
 
+# if shooting obstacle, kill obstacle
+def collision_sprite_munition():
+    pygame.sprite.groupcollide(munition_group, obstacle_group,True, True)
+
+#initial statements and settings for game
 pygame.init()
 game_running = True
 game_started = False
@@ -104,6 +148,7 @@ test_font = pygame.font.Font(None, 40)
 player = pygame.sprite.GroupSingle()
 player.add(Player())
 obstacle_group = pygame.sprite.Group()
+munition_group = pygame.sprite.Group()
 
 #background
 sky_surf = pygame.image.load('Graphics/space_background.jpg').convert_alpha()
@@ -127,12 +172,7 @@ start_rect = start_text.get_rect(center = (-500, 50))
 obstacle_timer = pygame.USEREVENT +1
 pygame.time.set_timer(obstacle_timer, 900)
 
-snail_animation_timer = pygame.USEREVENT + 2
-pygame.time.set_timer(snail_animation_timer,500)
-
-fly_animation_timer = pygame.USEREVENT + 2
-pygame.time.set_timer(fly_animation_timer,200)
-
+#Eventhandler
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -152,6 +192,9 @@ while True:
         if game_started == True and game_running == True:
             if event.type == obstacle_timer:
                 obstacle_group.add(Obstacle(choice(['fly', 'snail', 'snail'])))
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    munition_group.add(Munition(player_pos_y))
 
         if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
@@ -159,9 +202,6 @@ while True:
                         game_end = False
                         game_running = True
                         game_started = False
-        
-        #if event.type == pygame.MOUSEMOTION:
-            #player_rect.collidepoint(event.pos)
     
     if game_running == True:
         screen.blit(start_surf, start_cat_rectangle)
@@ -182,7 +222,10 @@ while True:
             player.update()
             obstacle_group.draw(screen)
             obstacle_group.update()
+            munition_group.draw(screen)
+            munition_group.update()
             game_running = collision_sprite()
+            collision_sprite_munition()
 
         else:
             pygame.draw.rect(screen, "Black", pygame.Rect(0, 0, 800, 400))

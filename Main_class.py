@@ -252,7 +252,7 @@ while True:
 
         if game_started == True and game_running == True:
             passed_time = pygame.time.get_ticks() - started_time
-            if passed_time > 1000000:
+            if passed_time > 100000:
                 pass
             elif passed_time > 40000 and event.type == obstacle_timer4:
                 obstacle_group.add(Obstacle(choice(['fly', 'snail'])))

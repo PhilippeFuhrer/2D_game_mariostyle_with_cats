@@ -8,7 +8,6 @@ score = 0
 score_shooting = 0
 passed_time = 0
 started_time = 0
-test_git = 1
 
 class Munition (pygame.sprite.Sprite):
     def __init__(self,player_pos_y):

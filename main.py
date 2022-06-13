@@ -6,6 +6,7 @@ from random import randint, choice
 passed_time = 0
 started_time = 0
 
+
 class Munition (pygame.sprite.Sprite):
     def __init__(self,player_pos_y):
         super().__init__()
@@ -198,6 +199,67 @@ class Start_screen:
         screen.blit(self.start_surf, self.start_cat_rectangle)
         screen.blit(self.start_text, self.start_rect)
         
+class Boss (pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        boss_surf1 = pygame.image.load('Graphics/fly1.png').convert_alpha()
+        boss_surf2 = pygame.image.load('Graphics/fly2.png').convert_alpha()
+        self.frames = [boss_surf1, boss_surf2]
+        self.health = 100
+        
+        self.animation_index = 0
+        self.image = self.frames[self.animation_index]
+        self.rect = self.image.get_rect(topleft = (700, 300))
+
+        self.move_down = True
+
+        self.img = pygame.image.load('Graphics/bullet.png').convert_alpha()
+        self.img_rotated = pygame.transform.rotate(self.img, 180)
+        self.shoot_bullet = False
+        self.x_position = self.rect.x
+        self.y_position = 240
+
+    def animation_state(self):
+        self.animation_index += 0.1
+        if self.animation_index >= len(self.frames):
+            self.animation_index = 0
+        self.image = self.frames[int(self.animation_index)]
+        
+    def boss_position(self):
+        if self.move_down == True:
+            self.rect.y += 4
+        if self.move_down == False:
+            self.rect.y -= 4
+        if self.rect.y >= 300:
+            self.move_down = False
+        if self.rect.y <= 60:
+            self.move_down = True
+        
+    def health_bar (self):
+        self.health_surf = pygame.Surface((40,4))
+        self.health_surf.fill((0,255,127))
+        self.health_bar_rect = self.health_surf.get_rect(center = (self.rect.x +40, self.rect.y -10))
+        screen.blit(self.health_surf, self.health_bar_rect)
+    
+    def bullet_movement(self):
+        
+        self.img_rect = self.img_rotated.get_rect(topleft = (self.x_position, self.y_position))
+        if self.rect.y == 240:
+            self.shoot_bullet = True
+        if self.shoot_bullet == True:
+            self.x_position -= 4
+            self.y_position = 240
+            screen.blit(self.img_rotated, self.img_rect)
+        if self.x_position <= -10:
+            self.shoot_bullet = False
+            self.x_position = self.rect.x
+            
+    def update(self):
+        self.animation_state()
+        self.boss_position()
+        self.bullet_movement()
+        self.health_bar()
+
 #initial statements and settings for game
 pygame.init()
 game_running = True
@@ -216,6 +278,10 @@ obstacle_group = pygame.sprite.Group()
 munition_group = pygame.sprite.Group()
 start_screen = Start_screen()
 main_game = Main_game()
+boss = pygame.sprite.GroupSingle()
+boss.add(Boss())
+
+
 
 #background
 sky_surf = pygame.image.load('Graphics/space_background.jpg').convert_alpha()
@@ -254,7 +320,6 @@ while True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     game_running = True
-                    started_time = pygame.time.get_ticks()
 
         if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
@@ -285,12 +350,16 @@ while True:
                         game_running = True
                         game_started = False
                         passed_time = 0
-    
+
     #intro
     if game_running == True and game_started == False:
         start_screen.text_movement()
         main_game.score = 0
         main_game.level = 1
+        started_time = pygame.time.get_ticks()
+        boss.draw(screen)
+        boss.update()
+        
      
     #gamemode
     if game_started == True:

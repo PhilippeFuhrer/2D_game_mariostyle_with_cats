@@ -4,7 +4,6 @@ from random import randint, choice
 
 
 #global variables
-score = 0
 score_shooting = 0
 passed_time = 0
 started_time = 0
@@ -135,35 +134,41 @@ class Obstacle (pygame.sprite.Sprite):
         if self.rect.x <= -100:
             self.kill()
 
-def display_score(score_shooting):
-    global score
-    score += score_shooting
-    level = 1
-    global passed_time
-    if passed_time > 10000:
-        level = 2
-    if passed_time > 20000:
-        level = 3
-    score_surf = test_font.render('Score: ' + f'{score}', False, "White")   
-    score_rect = score_surf.get_rect(topleft = (40,30))
-    level_surf = test_font.render('Level: ' + f'{level}', False, "White")
-    level_rect = level_surf.get_rect(topleft = (650,30))
-    screen.blit(score_surf, score_rect)
-    screen.blit(level_surf, level_rect)
 
-    if passed_time >= 31000:
-        wave = "Final battle!"
-        wave_surf = test_font.render(wave, False, "White")
-        wave_rect = wave_surf.get_rect(topleft = (220, 30))
-        screen.blit(wave_surf, wave_rect)
-    if passed_time >= 100000:
-        wave2 = "Concrats! You won!"
-        wave2_surf = test_font.render(wave2, False, "White")
-        wave2_rect = wave2_surf.get_rect(topleft = (220, 30))
-        screen.blit(wave2_surf, wave2_rect)
+class Main_game:
+    def __init__(self):
 
+        self.score = 0
+        self.level = 1
+        
+    def display_score(self, score_shooting):
+    
+        self.score += score_shooting
+        self.score_surf = test_font.render('Score: ' + f'{self.score}', False, "White")   
+        self.score_rect = self.score_surf.get_rect(topleft = (40,30))
+        screen.blit(self.score_surf, self.score_rect)
+        
+    def display_wave(self, passed_time):
+        
+        if passed_time > 10000:
+            self.level = 2
+        if passed_time > 20000:
+            self.level = 3
 
-    return score
+        self.level_surf = test_font.render('Level: ' + f'{self.level}', False, "White")
+        self.level_rect = self.level_surf.get_rect(topleft = (650,30))
+        screen.blit(self.level_surf, self.level_rect)
+        
+        if passed_time >= 31000:
+            wave = "Final battle!"
+            wave_surf = test_font.render(wave, False, "White")
+            wave_rect = wave_surf.get_rect(topleft = (220, 30))
+            screen.blit(wave_surf, wave_rect)
+        if passed_time >= 100000:
+            wave2 = "Concrats! You won!"
+            wave2_surf = test_font.render(wave2, False, "White")
+            wave2_rect = wave2_surf.get_rect(topleft = (220, 30))
+            screen.blit(wave2_surf, wave2_rect)
     
 # end game if collision with obstacle
 def collision_sprite():
@@ -285,8 +290,8 @@ while True:
         start_rect.x += 4
         if start_rect.x > 800:
             start_rect.x = -600
-        score = 0
         level = 1
+        score = 0
      
     #gamemode
     if game_started == True:
@@ -294,7 +299,9 @@ while True:
             pygame.draw.line(screen, "Black", (0,350), (800,350), width = 3)
             screen.blit(sky_surf,(0,0))
             screen.blit(ground_surf,(0,350))
-            score = display_score(score_shooting)
+            main_game = Main_game()
+            main_game.display_score(score_shooting)
+            main_game.display_wave(passed_time)
             player.draw(screen)
             player.update()
             obstacle_group.draw(screen)
@@ -311,15 +318,13 @@ while True:
             score_shooting = 0
 
             #display score
-            score_message = test_font.render('Your Score: ' + f'{score}', False, "White")
+            score_message = test_font.render('Your Score: ' + f'{main_game.score}', False, "White")
             score_rect = score_message.get_rect(center = (400, 50))
-            if score > 0:
-                screen.blit(score_message, score_rect)
+            screen.blit(score_message, score_rect)
             game_end = True
             
     pygame.display.update()
     clock.tick(60)
-
 
 
 

@@ -210,11 +210,13 @@ pygame.display.set_caption('Cat game <3')
 clock = pygame.time.Clock()
 test_font = pygame.font.Font(None, 40)
 
-#groups
+#groups and classes initalisation
 player = pygame.sprite.GroupSingle()
 player.add(Player())
 obstacle_group = pygame.sprite.Group()
 munition_group = pygame.sprite.Group()
+start_screen = Start_screen()
+
 
 #background
 sky_surf = pygame.image.load('Graphics/space_background.jpg').convert_alpha()
@@ -243,8 +245,6 @@ pygame.time.set_timer(obstacle_timer4, 100)
 # sounds
 explosion_sound = pygame.mixer.Sound('Audio/explosion.wav')
 explosion_sound.set_volume(0.2)
-
-start_screen = Start_screen()
 
 #Eventhandler
 while True:

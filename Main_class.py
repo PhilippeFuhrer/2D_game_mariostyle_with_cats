@@ -2,7 +2,6 @@ import pygame
 from sys import exit
 from random import randint, choice
 
-
 #global variables
 score_shooting = 0
 passed_time = 0
@@ -134,7 +133,6 @@ class Obstacle (pygame.sprite.Sprite):
         if self.rect.x <= -100:
             self.kill()
 
-
 class Main_game:
     def __init__(self):
 
@@ -169,7 +167,23 @@ class Main_game:
             wave2_surf = test_font.render(wave2, False, "White")
             wave2_rect = wave2_surf.get_rect(topleft = (220, 30))
             screen.blit(wave2_surf, wave2_rect)
-    
+
+class Start_screen:
+    def __init__(self):
+        self.start_surf = pygame.image.load('Graphics/space_cat.jpg').convert_alpha()
+        self.start_surf_scaled = pygame.transform.scale(self.start_surf, (1020, 700))
+        self.start_cat_rectangle = self.start_surf_scaled.get_rect(topleft = (0,0))
+        self.start_text = test_font.render("Welcome to catheaven! Press space to continue", False, "White").convert_alpha()
+        self.start_rect = self.start_text.get_rect(center = (200, 50))
+
+    def text_movement(self):
+        self.start_rect.x += 4
+        if self.start_rect.x > 800:
+            self.start_rect.x = -600
+        screen.blit(self.start_surf, self.start_cat_rectangle)
+        screen.blit(self.start_text, self.start_rect)
+        print(self.start_rect.x)
+
 # end game if collision with obstacle
 def collision_sprite():
     if pygame.sprite.spritecollide(player.sprite, obstacle_group,True):
@@ -213,13 +227,6 @@ endimg_surf = pygame.image.load('Graphics/intro_cat.jpeg')
 endimg_surf_scaled = pygame.transform.scale(endimg_surf, (200,200))
 endimg_rect = endimg_surf_scaled.get_rect(center = (400, 250))
 
-# Startscreen
-start_surf = pygame.image.load('Graphics/space_cat.jpg')
-start_surf_scaled = pygame.transform.scale(start_surf, (1020, 700))
-start_cat_rectangle = start_surf_scaled.get_rect(topleft = (0,0))
-start_text = test_font.render("Welcome to catheaven! Press space to continue", False, "White")
-start_rect = start_text.get_rect(center = (-500, 50))
-
 # timers
 obstacle_timer = pygame.USEREVENT +1
 pygame.time.set_timer(obstacle_timer, 900)
@@ -236,6 +243,8 @@ pygame.time.set_timer(obstacle_timer4, 100)
 # sounds
 explosion_sound = pygame.mixer.Sound('Audio/explosion.wav')
 explosion_sound.set_volume(0.2)
+
+start_screen = Start_screen()
 
 #Eventhandler
 while True:
@@ -282,14 +291,8 @@ while True:
                         passed_time = 0
     
     #intro
-    if game_running == True:
-        screen.blit(start_surf, start_cat_rectangle)
-        screen.blit(start_text, start_rect)
-
-        # introscreen movement
-        start_rect.x += 4
-        if start_rect.x > 800:
-            start_rect.x = -600
+    if game_running == True and game_started == False:
+        start_screen.text_movement()
         level = 1
         score = 0
      

@@ -3,7 +3,6 @@ from sys import exit
 from random import randint, choice
 
 #global variables
-score_shooting = 0
 passed_time = 0
 started_time = 0
 
@@ -135,19 +134,15 @@ class Obstacle (pygame.sprite.Sprite):
 
 class Main_game:
     def __init__(self):
-
         self.score = 0
         self.level = 1
         
-    def display_score(self, score_shooting):
-    
-        self.score += score_shooting
+    def display_score(self):
         self.score_surf = test_font.render('Score: ' + f'{self.score}', False, "White")   
         self.score_rect = self.score_surf.get_rect(topleft = (40,30))
         screen.blit(self.score_surf, self.score_rect)
         
     def display_wave(self, passed_time):
-        
         if passed_time > 10000:
             self.level = 2
         if passed_time > 20000:
@@ -168,6 +163,26 @@ class Main_game:
             wave2_rect = wave2_surf.get_rect(topleft = (220, 30))
             screen.blit(wave2_surf, wave2_rect)
 
+    # end game if collision with obstacle
+    def collision_sprite(self):
+        if pygame.sprite.spritecollide(player.sprite, obstacle_group,True):
+            obstacle_group.empty()
+            return False
+        else:
+            return True
+
+    # if shooting obstacle, kill obstacle
+    def collision_sprite_munition(self):
+        if pygame.sprite.groupcollide(munition_group, obstacle_group,True, True):
+            explosion_sound.play()
+            self.score += 100
+
+    def update (self):
+        self.display_score()
+        self.display_wave(passed_time)
+        self.collision_sprite()
+        self.collision_sprite_munition()
+
 class Start_screen:
     def __init__(self):
         self.start_surf = pygame.image.load('Graphics/space_cat.jpg').convert_alpha()
@@ -182,22 +197,6 @@ class Start_screen:
             self.start_rect.x = -600
         screen.blit(self.start_surf, self.start_cat_rectangle)
         screen.blit(self.start_text, self.start_rect)
-        print(self.start_rect.x)
-
-# end game if collision with obstacle
-def collision_sprite():
-    if pygame.sprite.spritecollide(player.sprite, obstacle_group,True):
-        obstacle_group.empty()
-        return False
-    else:
-        return True
-
-# if shooting obstacle, kill obstacle
-def collision_sprite_munition():
-    if pygame.sprite.groupcollide(munition_group, obstacle_group,True, True):
-        explosion_sound.play()
-        global score_shooting
-        score_shooting += 100
         
 #initial statements and settings for game
 pygame.init()
@@ -216,7 +215,7 @@ player.add(Player())
 obstacle_group = pygame.sprite.Group()
 munition_group = pygame.sprite.Group()
 start_screen = Start_screen()
-
+main_game = Main_game()
 
 #background
 sky_surf = pygame.image.load('Graphics/space_background.jpg').convert_alpha()
@@ -232,13 +231,10 @@ endimg_rect = endimg_surf_scaled.get_rect(center = (400, 250))
 # timers
 obstacle_timer = pygame.USEREVENT +1
 pygame.time.set_timer(obstacle_timer, 900)
-
 obstacle_timer2 = pygame.USEREVENT +2
 pygame.time.set_timer(obstacle_timer2, 600)
-
 obstacle_timer3 = pygame.USEREVENT +3
 pygame.time.set_timer(obstacle_timer3, 300)
-
 obstacle_timer4 = pygame.USEREVENT +4
 pygame.time.set_timer(obstacle_timer4, 100)
 
@@ -293,8 +289,8 @@ while True:
     #intro
     if game_running == True and game_started == False:
         start_screen.text_movement()
-        level = 1
-        score = 0
+        main_game.score = 0
+        main_game.level = 1
      
     #gamemode
     if game_started == True:
@@ -302,23 +298,20 @@ while True:
             pygame.draw.line(screen, "Black", (0,350), (800,350), width = 3)
             screen.blit(sky_surf,(0,0))
             screen.blit(ground_surf,(0,350))
-            main_game = Main_game()
-            main_game.display_score(score_shooting)
-            main_game.display_wave(passed_time)
+            main_game.update()
             player.draw(screen)
             player.update()
             obstacle_group.draw(screen)
             obstacle_group.update()
             munition_group.draw(screen)
             munition_group.update()
-            game_running = collision_sprite()
-            collision_sprite_munition()
+            game_running = main_game.collision_sprite()
+        
         else:
             pygame.draw.rect(screen, "Black", pygame.Rect(0, 0, 800, 400))
             screen.blit(endtext_surf, endtext_rect)
             screen.blit(endimg_surf_scaled, endimg_rect)
             player_gravity = 0
-            score_shooting = 0
 
             #display score
             score_message = test_font.render('Your Score: ' + f'{main_game.score}', False, "White")

@@ -1,10 +1,12 @@
 import pygame
-from sys import exit
+from sys import _xoptions, exit
 from random import randint, choice
 
 #global variables
 passed_time = 0
 started_time = 0
+x_position = 0
+y_position = 0
 
 
 class Munition (pygame.sprite.Sprite):
@@ -212,12 +214,15 @@ class Boss (pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft = (700, 300))
 
         self.move_down = True
-
-        self.img = pygame.image.load('Graphics/bullet.png').convert_alpha()
-        self.img_rotated = pygame.transform.rotate(self.img, 180)
         self.shoot_bullet = False
-        self.x_position = self.rect.x
-        self.y_position = 240
+
+        global x_position
+        x_position = self.rect.x
+        global y_position
+        y_position = 240
+
+        self.damage = False
+        self.damage_count = 0
 
     def animation_state(self):
         self.animation_index += 0.1
@@ -238,27 +243,52 @@ class Boss (pygame.sprite.Sprite):
     def health_bar (self):
         self.health_surf = pygame.Surface((40,4))
         self.health_surf.fill((0,255,127))
-        self.health_bar_rect = self.health_surf.get_rect(center = (self.rect.x +40, self.rect.y -10))
+        self.health_bar_rect = self.health_surf.get_rect(topleft = (self.rect.x +30, self.rect.y -15))
         screen.blit(self.health_surf, self.health_bar_rect)
-    
-    def bullet_movement(self):
-        
-        self.img_rect = self.img_rotated.get_rect(topleft = (self.x_position, self.y_position))
-        if self.rect.y == 240:
-            self.shoot_bullet = True
-        if self.shoot_bullet == True:
-            self.x_position -= 4
-            self.y_position = 240
-            screen.blit(self.img_rotated, self.img_rect)
-        if self.x_position <= -10:
-            self.shoot_bullet = False
-            self.x_position = self.rect.x
-            
+
+        self.damage_surf = pygame.Surface((self.damage_count,4))
+        self.damage_surf.fill((255,100,127))
+        self.damage_rect = self.damage_surf.get_rect(topleft = (self.rect.x +30, self.rect.y -15))
+        screen.blit(self.damage_surf, self.damage_rect)
+     
+    def collision_sprite_munition(self):
+        if pygame.sprite.groupcollide(boss, munition_group, False, True):
+            self.damage_count +=10
+            explosion_sound.play()
+        if self.damage_count >= 40:
+            boss.empty()
+      
     def update(self):
         self.animation_state()
         self.boss_position()
-        self.bullet_movement()
         self.health_bar()
+        self.collision_sprite_munition()
+
+class Boss_Munition (pygame.sprite.Sprite):
+    def __init__(self, x_position, y_position):
+        super().__init__()
+        self.img = pygame.image.load('Graphics/bullet.png').convert_alpha()
+        self.image = pygame.transform.rotate(self.img, 180)
+        self.rect = self.image.get_rect(topleft = (x_position,y_position))
+
+    def bullet_movement(self):
+        if y_position == 240:
+            self.shoot_bullet = True
+        if self.shoot_bullet == True:
+            self.rect.x -= 4
+            self.rect.y = 240
+            screen.blit(self.image, self.rect)
+        if self.rect.x <= -10:
+            self.shoot_bullet = False
+            self.rect.x = x_position
+
+    def collision_player_munition(self):
+        if pygame.sprite.groupcollide(player, boss_munition, False, True):
+            print("collision")
+    
+    def update(self):
+        self.bullet_movement()
+        self.collision_player_munition()
 
 #initial statements and settings for game
 pygame.init()
@@ -278,10 +308,10 @@ obstacle_group = pygame.sprite.Group()
 munition_group = pygame.sprite.Group()
 start_screen = Start_screen()
 main_game = Main_game()
-boss = pygame.sprite.GroupSingle()
-boss.add(Boss())
-
-
+boss = pygame.sprite.Group()
+boss.add(Boss()) 
+boss_munition = pygame.sprite.Group()
+boss_munition.add(Boss_Munition(x_position, y_position))
 
 #background
 sky_surf = pygame.image.load('Graphics/space_background.jpg').convert_alpha()
@@ -327,18 +357,24 @@ while True:
 
         if game_started == True and game_running == True:
             passed_time = pygame.time.get_ticks() - started_time
-            if passed_time > 100000:
-                pass
-            elif passed_time > 40000 and event.type == obstacle_timer4:
-                obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
-            elif passed_time > 30000:
-                pass
-            elif passed_time > 20000 and event.type == obstacle_timer3:
-                obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
-            elif passed_time > 10000 and event.type == obstacle_timer2:
-                obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
-            elif passed_time < 10000 and event.type == obstacle_timer:
-                obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+
+
+            boss.draw(screen)
+            boss.update()
+           
+            # if passed_time > 100000:
+            #     pass
+            # elif passed_time > 40000 and event.type == obstacle_timer4:
+            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+            # elif passed_time > 30000:
+            #     pass
+            # elif passed_time > 20000 and event.type == obstacle_timer3:
+            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+            # elif passed_time > 10000 and event.type == obstacle_timer2:
+            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+            # elif passed_time < 10000 and event.type == obstacle_timer:
+            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
                     munition_group.add(Munition(player_pos_y))
@@ -357,8 +393,8 @@ while True:
         main_game.score = 0
         main_game.level = 1
         started_time = pygame.time.get_ticks()
-        boss.draw(screen)
-        boss.update()
+        # boss.draw(screen)
+        # boss.update()
         
      
     #gamemode
@@ -375,7 +411,10 @@ while True:
             munition_group.draw(screen)
             munition_group.update()
             game_running = main_game.collision_sprite()
-        
+            boss.draw(screen)
+            boss.update()
+            boss_munition.draw(screen)
+            boss_munition.update()
         else:
             pygame.draw.rect(screen, "Black", pygame.Rect(0, 0, 800, 400))
             screen.blit(endtext_surf, endtext_rect)

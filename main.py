@@ -397,6 +397,7 @@ while True:
                         game_running = True
                         game_started = False
                         passed_time = 0
+                        boss_alive = True
 
     #intro
     if game_running == True and game_started == False:
@@ -427,7 +428,7 @@ while True:
 
             boss_munition.draw(screen)
             boss_munition.update()
-            if main_game.collision_sprite() == False or main_game.collision_player_munition() == False:
+            if main_game.collision_sprite() == False or main_game.collision_player_munition() == False or boss_alive == False:
                 game_running = False
 
         else:
@@ -436,10 +437,8 @@ while True:
             boss.empty()
             boss.add(Boss()) 
             player_gravity = 0
-
-            
-
             game_end = True
+            
             
     pygame.display.update()
     clock.tick(60)

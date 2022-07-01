@@ -1,12 +1,12 @@
 import pygame
-from sys import _xoptions, exit
+from sys import exit
 from random import randint, choice
 
 #global variables
-passed_time = 0
 started_time = 0
 x_position = 0
 y_position = 0
+boss_alive = True
 
 
 class Munition (pygame.sprite.Sprite):
@@ -150,6 +150,8 @@ class Main_game:
             self.level = 2
         if passed_time > 20000:
             self.level = 3
+        if passed_time > 28000:
+            self.level = 4
 
         self.level_surf = test_font.render('Level: ' + f'{self.level}', False, "White")
         self.level_rect = self.level_surf.get_rect(topleft = (650,30))
@@ -174,17 +176,28 @@ class Main_game:
         else:
             return True
 
-    # if shooting obstacle, kill obstacle
+    # if shooting obstacle, kill obstacle + score
     def collision_sprite_munition(self):
         if pygame.sprite.groupcollide(munition_group, obstacle_group,True, True):
             explosion_sound.play()
             self.score += 100
+
+    def add_score_boss(self):
+        self.score += 100
+    
+    def collision_player_munition(self):
+        if pygame.sprite.groupcollide(player, boss_munition, False, True):
+            boss_munition.empty()
+            return False
+        else:
+            return True
 
     def update (self):
         self.display_score()
         self.display_wave(passed_time)
         self.collision_sprite()
         self.collision_sprite_munition()
+        self.collision_player_munition()
 
 class Start_screen:
     def __init__(self):
@@ -201,6 +214,26 @@ class Start_screen:
         screen.blit(self.start_surf, self.start_cat_rectangle)
         screen.blit(self.start_text, self.start_rect)
         
+class End_screen():
+    def __init__(self):
+        self.game_status = "You loose!"
+        if boss_alive == False:
+            self.game_status = "You won!"
+        self.endimg_surf = pygame.image.load('Graphics/intro_cat.jpeg')
+        self.endtext_surf = test_font.render(self.game_status +" Press space to continue", False, "White")
+        self.endtext_rect = self.endtext_surf.get_rect(center = (400,100))
+        
+        self.endimg_surf_scaled = pygame.transform.scale(self.endimg_surf, (200,200))
+        self.endimg_rect = self.endimg_surf_scaled.get_rect(center = (400, 250))
+
+        screen.blit(self.endtext_surf, self.endtext_rect)
+        screen.blit(self.endimg_surf_scaled,self.endimg_rect)
+
+        self.score_message = test_font.render('Your Score: ' + f'{main_game.score}', False, "White")
+        self.score_rect = self.score_message.get_rect(center = (400, 50))
+        screen.blit(self.score_message, self.score_rect)
+        
+
 class Boss (pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -212,14 +245,7 @@ class Boss (pygame.sprite.Sprite):
         self.animation_index = 0
         self.image = self.frames[self.animation_index]
         self.rect = self.image.get_rect(topleft = (700, 300))
-
         self.move_down = True
-        self.shoot_bullet = False
-
-        global x_position
-        x_position = self.rect.x
-        global y_position
-        y_position = 240
 
         self.damage = False
         self.damage_count = 0
@@ -239,6 +265,11 @@ class Boss (pygame.sprite.Sprite):
             self.move_down = False
         if self.rect.y <= 60:
             self.move_down = True
+
+        global x_position
+        x_position = self.rect.x
+        global y_position
+        y_position = self.rect.y
         
     def health_bar (self):
         self.health_surf = pygame.Surface((40,4))
@@ -253,10 +284,15 @@ class Boss (pygame.sprite.Sprite):
      
     def collision_sprite_munition(self):
         if pygame.sprite.groupcollide(boss, munition_group, False, True):
-            self.damage_count +=10
+            self.damage_count += 5 
             explosion_sound.play()
+            main_game.add_score_boss()
+
         if self.damage_count >= 40:
             boss.empty()
+            boss_munition.empty()
+            global boss_alive
+            boss_alive = False
       
     def update(self):
         self.animation_state()
@@ -269,26 +305,14 @@ class Boss_Munition (pygame.sprite.Sprite):
         super().__init__()
         self.img = pygame.image.load('Graphics/bullet.png').convert_alpha()
         self.image = pygame.transform.rotate(self.img, 180)
-        self.rect = self.image.get_rect(topleft = (x_position,y_position))
+        self.rect = self.image.get_rect(topleft = (x_position, y_position))
 
     def bullet_movement(self):
-        if y_position == 240:
-            self.shoot_bullet = True
-        if self.shoot_bullet == True:
-            self.rect.x -= 4
-            self.rect.y = 240
-            screen.blit(self.image, self.rect)
-        if self.rect.x <= -10:
-            self.shoot_bullet = False
-            self.rect.x = x_position
-
-    def collision_player_munition(self):
-        if pygame.sprite.groupcollide(player, boss_munition, False, True):
-            print("collision")
+        self.rect.x -= 6
+        screen.blit(self.image, self.rect)
     
     def update(self):
         self.bullet_movement()
-        self.collision_player_munition()
 
 #initial statements and settings for game
 pygame.init()
@@ -297,7 +321,7 @@ game_started = False
 game_end = False
 game_difficulty = 900
 screen = pygame.display.set_mode((800,400))
-pygame.display.set_caption('Cat game <3')
+pygame.display.set_caption('Simple Shooter <3')
 clock = pygame.time.Clock()
 test_font = pygame.font.Font(None, 40)
 
@@ -311,18 +335,10 @@ main_game = Main_game()
 boss = pygame.sprite.Group()
 boss.add(Boss()) 
 boss_munition = pygame.sprite.Group()
-boss_munition.add(Boss_Munition(x_position, y_position))
 
 #background
 sky_surf = pygame.image.load('Graphics/space_background.jpg').convert_alpha()
 ground_surf = pygame.image.load('Graphics/ground.png').convert_alpha()
-
-# EndScreen
-endtext_surf = test_font.render("You lost! Press space to continue", False, "White")
-endtext_rect = endtext_surf.get_rect(center = (400,100))
-endimg_surf = pygame.image.load('Graphics/intro_cat.jpeg')
-endimg_surf_scaled = pygame.transform.scale(endimg_surf, (200,200))
-endimg_rect = endimg_surf_scaled.get_rect(center = (400, 250))
 
 # timers
 obstacle_timer = pygame.USEREVENT +1
@@ -333,6 +349,8 @@ obstacle_timer3 = pygame.USEREVENT +3
 pygame.time.set_timer(obstacle_timer3, 300)
 obstacle_timer4 = pygame.USEREVENT +4
 pygame.time.set_timer(obstacle_timer4, 100)
+obstacle_timer5 = pygame.USEREVENT +5
+pygame.time.set_timer(obstacle_timer5, randint(1000, 3000))
 
 # sounds
 explosion_sound = pygame.mixer.Sound('Audio/explosion.wav')
@@ -356,24 +374,17 @@ while True:
                     game_started = True
 
         if game_started == True and game_running == True:
+            global passed_time
             passed_time = pygame.time.get_ticks() - started_time
-
-
-            boss.draw(screen)
-            boss.update()
            
-            # if passed_time > 100000:
-            #     pass
-            # elif passed_time > 40000 and event.type == obstacle_timer4:
-            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
-            # elif passed_time > 30000:
-            #     pass
-            # elif passed_time > 20000 and event.type == obstacle_timer3:
-            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
-            # elif passed_time > 10000 and event.type == obstacle_timer2:
-            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
-            # elif passed_time < 10000 and event.type == obstacle_timer:
-            #     obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+            if passed_time > 28000:
+                pass
+            elif passed_time > 20000 and event.type == obstacle_timer3:
+                 obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+            elif passed_time > 10000 and event.type == obstacle_timer2:
+                obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
+            elif passed_time < 10000 and event.type == obstacle_timer:
+                obstacle_group.add(Obstacle(choice(['fly', 'snail'])))
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
@@ -393,9 +404,6 @@ while True:
         main_game.score = 0
         main_game.level = 1
         started_time = pygame.time.get_ticks()
-        # boss.draw(screen)
-        # boss.update()
-        
      
     #gamemode
     if game_started == True:
@@ -410,21 +418,27 @@ while True:
             obstacle_group.update()
             munition_group.draw(screen)
             munition_group.update()
-            game_running = main_game.collision_sprite()
-            boss.draw(screen)
-            boss.update()
+
+            if passed_time > 35000:
+                boss.draw(screen)
+                boss.update()
+                if event.type == obstacle_timer5 and boss_alive == True:
+                    boss_munition.add(Boss_Munition(x_position, y_position))
+
             boss_munition.draw(screen)
             boss_munition.update()
+            if main_game.collision_sprite() == False or main_game.collision_player_munition() == False:
+                game_running = False
+
         else:
             pygame.draw.rect(screen, "Black", pygame.Rect(0, 0, 800, 400))
-            screen.blit(endtext_surf, endtext_rect)
-            screen.blit(endimg_surf_scaled, endimg_rect)
+            end_screen = End_screen()
+            boss.empty()
+            boss.add(Boss()) 
             player_gravity = 0
 
-            #display score
-            score_message = test_font.render('Your Score: ' + f'{main_game.score}', False, "White")
-            score_rect = score_message.get_rect(center = (400, 50))
-            screen.blit(score_message, score_rect)
+            
+
             game_end = True
             
     pygame.display.update()
